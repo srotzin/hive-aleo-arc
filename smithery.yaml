@@ -1,0 +1,43 @@
+name: hive-aleo-arc
+version: 1.0.0
+description: >
+  Hive Privacy Receipt Layer. Generates commitment-style attestations
+  (SHA-256 commitment + ed25519 Spectral signature + nullifier) for
+  private agent-to-agent settlements. Attestations are offline-verifiable.
+  v2 roadmap: anchor proofs to Aleo / Arc zk chain.
+author: Steve Rotzin <steve@thehiveryiq.com>
+license: MIT
+repository: https://github.com/srotzin/hive-aleo-arc
+
+server:
+  type: http
+  url: https://hive-aleo-arc.onrender.com/mcp
+  transport: streamable-http
+
+tools:
+  - name: attest_private_payment
+    description: >
+      Generate a commitment-style attestation for a private payment.
+      Returns SHA-256 commitment + ed25519 Spectral signature + nullifier.
+      Costs $0.05 USDC (x402, Base mainnet). Offline-verifiable.
+  - name: verify_private_attestation
+    description: >
+      Verify a previously-issued attestation. Checks ed25519 signature
+      and detects nullifier reuse (double-spend). FREE.
+  - name: subscribe_enterprise
+    description: >
+      Subscribe to enterprise tier ($500/mo USDC). Unlimited verifies,
+      priority SLA, audit export.
+  - name: get_private_stats
+    description: >
+      Aggregated service statistics: total attestations, total nullifiers.
+      No PII. FREE.
+
+tags:
+  - privacy
+  - attestation
+  - zk
+  - aleo
+  - x402
+  - mcp
+  - hive

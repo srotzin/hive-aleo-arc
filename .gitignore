@@ -1,0 +1,8 @@
+node_modules/
+.env
+dist/
+.DS_Store
+data/spectral.key
+data/nullifiers.json
+data/attestations.json
+*.log
