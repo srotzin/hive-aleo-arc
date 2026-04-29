@@ -530,6 +530,277 @@ app.post('/mcp', async (req, res) => {
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 
+// ── well-known / x402 ─────────────────────────────────────────────────────────
+
+app.get('/.well-known/x402', (_req, res) => {
+  res.json({
+    x402Version:  2,
+    cold_safe:    true,
+    service:      'hive-aleo-arc',
+    version:      '1.0.0',
+    brand_color:  '#C08D23',
+    payTo:        '0x15184bf50b3d3f52b60434f8942b7d52f2eb436e',
+    network:      'base',
+    chain_id:     8453,
+    asset:        'USDC',
+    contract:     '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+    facilitator: {
+      url:                    'https://hivemorph.onrender.com/v1/x402',
+      supported_schemes:      ['exact'],
+      supported_networks:     ['eip155:8453'],
+      syncFacilitatorOnStart: false,
+      cold_safe:              true
+    },
+    resources: [
+      {
+        path:        '/v1/private/attest',
+        method:      'POST',
+        description: 'Generate commitment-style attestation for a private payment. $0.05 USDC per attestation.',
+        'x-pricing': {
+          scheme: 'exact',
+          asset: 'USDC',
+          amount_atomic: 50000,
+          amount_usd: '$0.05',
+          payTo: '0x15184bf50b3d3f52b60434f8942b7d52f2eb436e',
+          description: '$0.05 USDC per attestation. payTo Monroe.',
+        },
+        'x-payment-info': {
+          scheme: 'exact',
+          asset: 'USDC',
+          amount_atomic: 50000,
+          amount_usd: '$0.05',
+          payTo: '0x15184bf50b3d3f52b60434f8942b7d52f2eb436e',
+          description: '$0.05 USDC per attestation. payTo Monroe.',
+        }
+      },
+      {
+        path:        '/v1/private/enterprise/subscribe',
+        method:      'POST',
+        description: 'Enterprise tier subscription. $500/mo USDC. Unlimited verifies + priority SLA.',
+        'x-pricing': {
+          scheme: 'exact',
+          asset: 'USDC',
+          amount_atomic: 500000000,
+          amount_usd: '$500.00/mo',
+          payTo: '0x15184bf50b3d3f52b60434f8942b7d52f2eb436e',
+          description: '$500 USDC/mo. Unlimited verifies + priority SLA.',
+        },
+        'x-payment-info': {
+          scheme: 'exact',
+          asset: 'USDC',
+          amount_atomic: 500000000,
+          amount_usd: '$500.00/mo',
+          payTo: '0x15184bf50b3d3f52b60434f8942b7d52f2eb436e',
+          description: '$500 USDC/mo. Unlimited verifies + priority SLA.',
+        }
+      },
+      {
+        path:        '/v1/private/verify',
+        method:      'POST',
+        description: 'Verify a previously issued attestation. Free.',
+        'x-pricing':      { scheme: 'free', note: 'Verification is always free.' },
+        'x-payment-info': { scheme: 'free', note: 'Verification is always free.' }
+      },
+      {
+        path:        '/v1/private/stats',
+        method:      'GET',
+        description: 'Aggregated service statistics. Free.',
+        'x-pricing':      { scheme: 'free', note: 'Stats are public and free.' },
+        'x-payment-info': { scheme: 'free', note: 'Stats are public and free.' }
+      }
+    ],
+    discovery_companions: {
+      agent_card: '/.well-known/agent-card.json',
+      ap2:        '/.well-known/ap2.json',
+      openapi:    '/.well-known/openapi.json'
+    },
+    disclaimers: {
+      not_a_security: true,
+      not_custody:    true,
+      not_insurance:  true,
+      signal_only:    true
+    }
+  });
+});
+
+// ── well-known / agent-card.json (A2A 0.1) ────────────────────────────────────
+
+app.get('/.well-known/agent-card.json', (req, res) => {
+  const pubkey = (typeof getPublicKeyB64 === 'function')
+    ? getPublicKeyB64()
+    : (typeof spectral !== 'undefined' ? (spectral.publicKeyB64 || null) : null);
+  res.json({
+    name:        'hive-aleo-arc',
+    version:     '1.0.0',
+    description: 'Privacy receipt layer. Commitment-style attestations (SHA-256 + ed25519 + nullifier). Offline-verifiable. v2 roadmap: anchor to Aleo/Arc zk chain.',
+    brand_color: '#C08D23',
+    did:         `did:web:${req.hostname}`,
+    protocol:    'A2A/0.1',
+    capabilities: [
+      'private_attestation',
+      'nullifier_verification',
+      'commitment_scheme',
+      'double_spend_detection'
+    ],
+    spectral: {
+      public_key:    pubkey,
+      signature_algo: 'ed25519',
+      jwks_endpoint: '/.well-known/jwks.json'
+    },
+    treasury: {
+      address:  '0x15184bf50b3d3f52b60434f8942b7d52f2eb436e',
+      network:  'base',
+      chain_id: 8453,
+      asset:    'USDC'
+    },
+    payment: {
+      protocol: 'x402',
+      version:  '2',
+      network:  'base',
+      chain_id: 8453,
+      asset:    'USDC',
+      contract: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+      payTo:    '0x15184bf50b3d3f52b60434f8942b7d52f2eb436e'
+    },
+    mcp_endpoint: '/mcp',
+    tools: ['attest_private_payment', 'verify_private_attestation', 'subscribe_enterprise', 'get_private_stats']
+  });
+});
+
+// ── well-known / ap2.json (AP2 0.1) ───────────────────────────────────────────
+
+app.get('/.well-known/ap2.json', (_req, res) => {
+  res.json({
+    ap2_version:   '0.1',
+    service:       'hive-aleo-arc',
+    accepted_tokens: [
+      {
+        symbol:   'USDC',
+        contract: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+        network:  'base',
+        chain_id: 8453,
+        decimals: 6
+      },
+      {
+        symbol:   'USDT',
+        contract: '0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2',
+        network:  'base',
+        chain_id: 8453,
+        decimals: 6,
+        role:     'alternate'
+      }
+    ],
+    networks:           [{ name: 'base', chain_id: 8453, role: 'primary' }],
+    payment_protocols:  ['x402/v2'],
+    settlement: {
+      finality:  'on-chain',
+      network:   'base',
+      chain_id:  8453,
+      payTo:     '0x15184bf50b3d3f52b60434f8942b7d52f2eb436e'
+    },
+    paid_endpoints: [
+      { path: '/v1/private/attest', method: 'POST', description: 'Generate commitment-style attestation for a private payment. $0.05 USDC per attestation.' },
+      { path: '/v1/private/enterprise/subscribe', method: 'POST', description: 'Enterprise tier subscription. $500/mo USDC. Unlimited verifies + priority SLA.' }
+    ],
+    free_endpoints: [
+      { path: '/v1/private/verify', method: 'POST', description: 'Verify a previously issued attestation. Free.' },
+      { path: '/v1/private/stats', method: 'GET', description: 'Aggregated service statistics. Free.' }
+    ],
+    brand_color: '#C08D23'
+  });
+});
+
+// ── well-known / openapi.json (OpenAPI 3.0.3 + x-pricing + x-payment-info) ────
+
+app.get('/.well-known/openapi.json', (_req, res) => {
+  res.json({
+    openapi: '3.0.3',
+    info: {
+      title:       'hive-aleo-arc API',
+      version:     '1.0.0',
+      description: 'Privacy receipt layer. Commitment-style attestations (SHA-256 + ed25519 + nullifier). Offline-verifiable. v2 roadmap: anchor to Aleo/Arc zk chain.',
+      contact:     { name: 'The Hivery', url: 'https://thehiveryiq.com' }
+    },
+    servers: [{ url: 'https://hive-aleo-arc.onrender.com', description: 'Production (Render)' }],
+    paths: {
+      '/v1/private/attest': {
+        post: {
+          operationId: 'v1_private_attest',
+          summary: 'Generate commitment-style attestation for a private payment. $0.05 USDC per attestation.',
+          'x-pricing': {
+          scheme: 'exact',
+          asset: 'USDC',
+          amount_atomic: 50000,
+          amount_usd: '$0.05',
+          payTo: '0x15184bf50b3d3f52b60434f8942b7d52f2eb436e',
+          description: '$0.05 USDC per attestation. payTo Monroe.'
+          },
+          'x-payment-info': {
+          scheme: 'exact',
+          asset: 'USDC',
+          amount_atomic: 50000,
+          amount_usd: '$0.05',
+          payTo: '0x15184bf50b3d3f52b60434f8942b7d52f2eb436e',
+          description: '$0.05 USDC per attestation. payTo Monroe.'
+          },
+          responses: {
+            '200': { description: 'Success.' },
+            '402': { description: 'Payment Required — x402 challenge.' },
+            '400': { description: 'Validation error.' }
+          }
+        }
+      },
+      '/v1/private/enterprise/subscribe': {
+        post: {
+          operationId: 'v1_private_enterprise_subscribe',
+          summary: 'Enterprise tier subscription. $500/mo USDC. Unlimited verifies + priority SLA.',
+          'x-pricing': {
+          scheme: 'exact',
+          asset: 'USDC',
+          amount_atomic: 500000000,
+          amount_usd: '$500.00/mo',
+          payTo: '0x15184bf50b3d3f52b60434f8942b7d52f2eb436e',
+          description: '$500 USDC/mo. Unlimited verifies + priority SLA.'
+          },
+          'x-payment-info': {
+          scheme: 'exact',
+          asset: 'USDC',
+          amount_atomic: 500000000,
+          amount_usd: '$500.00/mo',
+          payTo: '0x15184bf50b3d3f52b60434f8942b7d52f2eb436e',
+          description: '$500 USDC/mo. Unlimited verifies + priority SLA.'
+          },
+          responses: {
+            '200': { description: 'Success.' },
+            '402': { description: 'Payment Required — x402 challenge.' },
+            '400': { description: 'Validation error.' }
+          }
+        }
+      },
+      '/v1/private/verify': {
+        post: {
+          operationId: 'v1_private_verify',
+          summary: 'Verify a previously issued attestation. Free.',
+          responses: {
+            '200': { description: 'Success.' },
+            '400': { description: 'Validation error.' }
+          }
+        }
+      },
+      '/v1/private/stats': {
+        get: {
+          operationId: 'v1_private_stats',
+          summary: 'Aggregated service statistics. Free.',
+          responses: {
+            '200': { description: 'Success.' },
+            '400': { description: 'Validation error.' }
+          }
+        }
+      }
+    }
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`hive-aleo-arc listening on port ${PORT}`);
   console.log(`Spectral pubkey (ed25519): ${spectral.publicKeyB64}`);
