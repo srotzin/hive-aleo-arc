@@ -201,10 +201,39 @@ function x402Challenge(amountAtomic, description) {
 const app  = express();
 app.use(express.json());
 
+// ─── CORS middleware ──────────────────────────────────────────────────────────
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Payment, X-Did, X-Signature');
+  res.setHeader('Access-Control-Max-Age', '86400');
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
+
+
 const PORT     = process.env.PORT || 3000;
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 
 // ─── Health ───────────────────────────────────────────────────────────────────
+
+
+// ─── Root ─────────────────────────────────────────────────────────────────────
+app.get('/', (_req, res) => {
+  res.json({
+    service:      'hive-aleo-arc',
+    version:      '1.1.0',
+    description:  'Privacy receipt layer and Aleo facilitator. Routes Paxos USAd and Circle USDCx on Aleo mainnet.',
+    agent_card:   'https://hive-aleo-arc.onrender.com/.well-known/agent.json',
+    did:          'did:web:hive-aleo-arc.onrender.com',
+    did_document: 'https://hive-aleo-arc.onrender.com/.well-known/did.json',
+    health:       'https://hive-aleo-arc.onrender.com/health',
+    endpoints:    ['/v1/facilitator/quote', '/v1/facilitator/verify', '/v1/facilitator/settle', '/v1/private/attest'],
+    x402:         'https://hive-aleo-arc.onrender.com/.well-known/x402',
+    operator:     'Hive Civilization',
+    license:      'MIT'
+  });
+});
 
 app.get('/health', (_req, res) => {
   res.json({
@@ -1049,6 +1078,48 @@ app.get('/.well-known/openapi.json', (_req, res) => {
 });
 
 // ─── Start ────────────────────────────────────────────────────────────────────
+
+
+// ─── DID document ─────────────────────────────────────────────────────────────
+app.get('/.well-known/did.json', (_req, res) => {
+  const did = 'did:web:hive-aleo-arc.onrender.com';
+  const rawPub = Buffer.from(spectral.publicKeyHex, 'hex');
+  const x     = rawPub.toString('base64url');
+  res.json({
+    '@context': [
+      'https://www.w3.org/ns/did/v1',
+      'https://w3id.org/security/suites/jws-2020/v1'
+    ],
+    id: did,
+    verificationMethod: [{
+      id:         `${did}#spectral`,
+      type:       'JsonWebKey2020',
+      controller: did,
+      publicKeyJwk: {
+        kty: 'OKP',
+        crv: 'Ed25519',
+        use: 'sig',
+        alg: 'EdDSA',
+        kid: 'hive-aleo-arc-spectral-v1',
+        x
+      }
+    }],
+    authentication:  [`${did}#spectral`],
+    assertionMethod: [`${did}#spectral`],
+    service: [
+      {
+        id:              `${did}#agent-card`,
+        type:            'AgentCard',
+        serviceEndpoint: 'https://hive-aleo-arc.onrender.com/.well-known/agent.json'
+      },
+      {
+        id:              `${did}#a2a`,
+        type:            'A2AService',
+        serviceEndpoint: 'https://hive-aleo-arc.onrender.com/v1'
+      }
+    ]
+  });
+});
 
 app.listen(PORT, () => {
   console.log(`hive-aleo-arc listening on port ${PORT}`);
